@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Your Garmin Account</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        h2 { margin-top: 0; color: #111; font-size: 24px; text-align: center; }
+        p { color: #666; font-size: 14px; text-align: center; margin-bottom: 25px; line-height: 1.5; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+        input[type="email"], input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: #fafafa;
+        }
+        input:focus { outline: none; border-color: #007bff; background-color: #fff; }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .hidden { display: none; }
+        #statusMessage {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+            line-height: 1.4;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Connect Garmin Connect</h2>
+    <p>Link your account securely. We will email you a unique setup code to enter on your Garmin device.</p>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="email">Garmin Email</label>
+            <input type="email" id="email" required placeholder="your.email@example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Garmin Password</label>
+            <input type="password" id="password" required placeholder="••••••••">
+        </div>
+
+        <div class="form-group hidden" id="mfaGroup">
+            <label for="mfaCode" style="color: #007bff;">MFA Verification Code</label>
+            <input type="text" id="mfaCode" placeholder="Enter the code sent by Garmin">
+        </div>
+
+        <button type="submit" id="submitBtn">Link & Generate Code</button>
+    </form>
+
+    <div id="statusMessage"></div>
+</div>
+
+<script>
+    // ⚠️ CRITICAL: Replace this string with the actual URL provided by Firebase CLI after your deploy
+    const CLOUD_FUNCTION_URL = "https://europe-west1-YOUR_PROJECT_ID.cloudfunctions.net/generate_garmin_token";
+
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const mfaGroup = document.getElementById('mfaGroup');
+    const mfaInput = document.getElementById('mfaCode');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMessage = document.getElementById('statusMessage');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Lock UI to prevent double submission
+        submitBtn.disabled = true;
+        showStatus("Securely authenticating with Garmin... Please wait.", "info");
+
+        const payload = {
+            email: emailInput.value.trim().toLowerCase(),
+            password: passwordInput.value
+        };
+
+        // Inject the MFA token if the field became active
+        if (!mfaGroup.classList.contains('hidden') && mfaInput.value.trim() !== "") {
+            payload.mfa_code = mfaInput.value.trim();
+        }
+
+        try {
+            const response = await fetch(CLOUD_FUNCTION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === "success") {
+                showStatus(result.message, "success");
+                form.reset();
+                mfaGroup.classList.add('hidden');
+                submitBtn.innerText = "Link & Generate Code";
+                submitBtn.disabled = false;
+            } else if (response.ok && result.status === "mfa_required") {
+                // Backend requests MFA verification code
+                showStatus(result.message, "info");
+                mfaGroup.classList.remove('hidden');
+                mfaInput.required = true;
+                mfaInput.focus();
+                submitBtn.innerText = "Verify MFA Code";
+                submitBtn.disabled = false;
+            } else {
+                showStatus(result.message || "Authentication failed. Please verify your credentials.", "error");
+                submitBtn.disabled = false;
+            }
+
+        } catch (error) {
+            showStatus("Network error. Could not establish connection to the authorization server.", "error");
+            submitBtn.disabled = false;
+        }
+    });
+
+    function showStatus(text, type) {
+        statusMessage.innerText = text;
+        statusMessage.className = type;
+        statusMessage.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
