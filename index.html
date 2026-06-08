@@ -130,7 +130,6 @@
 </div>
 
 <script>
-    // Updated to point directly to your functional Gen 2 Cloud Run endpoint
     const CLOUD_FUNCTION_URL = "https://generate-garmin-token-3hcfaorfcq-ew.a.run.app";
     
     const form = document.getElementById('loginForm');
@@ -146,10 +145,7 @@
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Hide paygate on every new authentication sequence attempt
         paygateContainer.classList.add('hidden');
-        
-        // Lock UI to prevent double submission
         submitBtn.disabled = true;
         showStatus("Securely authenticating with Garmin... Please wait.", "info");
 
@@ -159,7 +155,6 @@
             password: passwordInput.value
         };
 
-        // Inject the MFA token if the field became active
         if (!mfaGroup.classList.contains('hidden') && mfaInput.value.trim() !== "") {
             payload.mfa_code = mfaInput.value.trim();
         }
@@ -171,16 +166,22 @@
                 body: JSON.stringify(payload)
             });
 
-            const result = await response.json();
+            // Safe parsing: Only attempt to read JSON if the response content type says so
+            let result = {};
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                result = await response.json();
+            } else {
+                const plainText = await response.text();
+                result = { message: plainText || "An unexpected response was received from the server." };
+            }
 
             if (response.ok && result.status === "success") {
                 showStatus(result.message, "success");
                 
-                // Build dynamic link using the sanitized email address
                 const stripeBaseUrl = "https://buy.stripe.com/test_4gM3cn1Pw1Vk362aK12wU00";
                 stripeCheckoutBtn.href = `${stripeBaseUrl}?prefilled_email=${encodeURIComponent(targetEmail)}`;
                 
-                // Clean up input contexts and reveal checkout drawer
                 form.reset();
                 mfaGroup.classList.add('hidden');
                 paygateContainer.classList.remove('hidden');
@@ -188,7 +189,6 @@
                 submitBtn.innerText = "Link & Generate Code";
                 submitBtn.disabled = false;
             } else if (response.ok && result.status === "mfa_required") {
-                // Backend requests MFA verification code
                 showStatus(result.message, "info");
                 mfaGroup.classList.remove('hidden');
                 mfaInput.required = true;
@@ -196,6 +196,7 @@
                 submitBtn.innerText = "Verify MFA Code";
                 submitBtn.disabled = false;
             } else {
+                // Displays specific error messages (like your custom "Invalid Garmin email or password.")
                 showStatus(result.message || "Authentication failed. Please verify your credentials.", "error");
                 submitBtn.disabled = false;
             }
