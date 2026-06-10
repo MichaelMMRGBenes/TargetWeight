@@ -12,8 +12,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 40px 20px;
+            box-sizing: border-box;
         }
         .container {
             background: #ffffff;
@@ -21,9 +23,38 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
             box-sizing: border-box;
         }
+        
+        /* Navigation Tabs Styles */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 25px;
+            gap: 10px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .tab-btn:hover {
+            color: #0f172a;
+        }
+        .tab-btn.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+
         h2 { margin-top: 0; color: #111; font-size: 24px; text-align: center; }
         p { color: #666; font-size: 14px; text-align: center; margin-bottom: 25px; line-height: 1.5; }
         .form-group { margin-bottom: 20px; }
@@ -53,6 +84,7 @@
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #cccccc; cursor: not-allowed; }
         .hidden { display: none !important; }
+        
         #statusMessage {
             margin-top: 20px;
             padding: 12px;
@@ -117,52 +149,138 @@
             box-sizing: border-box;
         }
         .stripe-btn:hover { background-color: #1d4ed8; }
+
+        /* Privacy Document Semantic Styling */
+        .privacy-content {
+            text-align: left;
+            line-height: 1.6;
+            color: #475569;
+        }
+        .privacy-content h2 {
+            text-align: left;
+            font-size: 22px;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+        .privacy-content h3 {
+            font-size: 16px;
+            color: #1e293b;
+            margin-top: 22px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .privacy-content p {
+            text-align: left;
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 14px;
+        }
+        .privacy-content ul {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+        .privacy-content li {
+            margin-bottom: 8px;
+            font-size: 13.5px;
+            color: #475569;
+        }
+        .privacy-meta {
+            font-size: 12px !important;
+            color: #94a3b8 !important;
+            margin-bottom: 20px !important;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Link Garmin Account</h2>
-    <p>Securely link your credentials. A unique integration code will be generated and delivered via email to finalize your configuration.</p>
-
-    <form id="loginForm">
-        <div class="form-group">
-            <label for="email">Garmin Email</label>
-            <input type="email" id="email" required placeholder="your.email@example.com">
-        </div>
-
-        <div class="form-group">
-            <label for="password">Garmin Password</label>
-            <input type="password" id="password" required placeholder="••••••••">
-        </div>
-
-        <div class="form-group hidden" id="mfaGroup">
-            <label for="mfaCode" style="color: #007bff;">MFA Verification Code</label>
-            <input type="text" id="mfaCode" placeholder="Enter the code sent by Garmin">
-        </div>
-
-        <button type="submit" id="submitBtn">Link & Generate Code</button>
-    </form>
-
-    <div id="statusMessage"></div>
-
-    <!-- Free Promo Code Box Component -->
-    <div id="codeContainer" class="code-box hidden">
-        <h3>Your Device Pairing Code</h3>
-        <div id="codeDisplay" class="code-display">------</div>
-        <ol>
-            <li>Open the <strong>TargetWeight</strong> (Weight Logger) app directly in the Garmin ConnectIQ.</li>
-            <li>Press the <strong>SETTINGS-Button</strong>, enter the 6-character code listed above and save.</li>
-            <li>Once completed, weight entries saved on your watch will securely synchronize automatically.</li>
-        </ol>
+    <div class="tabs">
+        <button id="btnSetup" class="tab-btn active" onclick="switchTab('setup')">Link Account</button>
+        <button id="btnPrivacy" class="tab-btn" onclick="switchTab('privacy')">Privacy Policy</button>
     </div>
 
-    <div id="paygateContainer" class="paygate-box hidden">
-        <h3>Premium Subscription Plan</h3>
-        <p>To enable uninterrupted database syncing and activate full service features, please finalize your subscription preference below.</p>
-        <a id="stripeCheckoutBtn" href="#" target="_blank" class="stripe-btn">
-            Manage Subscription Plan
-        </a>
+    <div id="viewSetup">
+        <h2>Link Garmin Account</h2>
+        <p>Securely link your credentials. A unique integration code will be generated and delivered via email to finalize your configuration.</p>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Garmin Email</label>
+                <input type="email" id="email" required placeholder="your.email@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Garmin Password</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+
+            <div class="form-group hidden" id="mfaGroup">
+                <label for="mfaCode" style="color: #007bff;">MFA Verification Code</label>
+                <input type="text" id="mfaCode" placeholder="Enter the code sent by Garmin">
+            </div>
+
+            <button type="submit" id="submitBtn">Link & Generate Code</button>
+        </form>
+
+        <div id="statusMessage"></div>
+
+        <div id="codeContainer" class="code-box hidden">
+            <h3>Your Device Pairing Code</h3>
+            <div id="codeDisplay" class="code-display">------</div>
+            <ol>
+                <li>Open the <strong>TargetWeight</strong> (Weight Logger) app directly in the Garmin ConnectIQ.</li>
+                <li>Press the <strong>SETTINGS-Button</strong>, enter the 6-character code listed above and save.</li>
+                <li>Once completed, weight entries saved on your watch will securely synchronize automatically.</li>
+            </ol>
+        </div>
+
+        <div id="paygateContainer" class="paygate-box hidden">
+            <h3>Premium Subscription Plan</h3>
+            <p>To enable uninterrupted database syncing and activate full service features, please finalize your subscription preference below.</p>
+            <a id="stripeCheckoutBtn" href="#" target="_blank" class="stripe-btn">
+                Manage Subscription Plan
+            </a>
+        </div>
+    </div>
+
+    <div id="viewPrivacy" class="hidden">
+        <div class="privacy-content">
+            <h2>Privacy Policy</h2>
+            <p class="privacy-meta">Last updated: June 2026</p>
+            
+            <p>This Privacy Policy describes how <strong>TargetWeight (Weight Logger)</strong> ("the Application") handles user information. The Application functions strictly as an integration tool to synchronize personal weight data from Garmin Connect to a secure, private database.</p>
+            
+            <h3>1. Information Collection and Use</h3>
+            <p>The Application only processes information that is absolutely necessary to perform its core synchronization service.</p>
+            <ul>
+                <li><strong>Garmin Credentials:</strong> Your Garmin email and password are submitted via a secure, encrypted HTTPS connection directly to the authentication endpoint. These credentials are used solely to establish an initial connection with Garmin and are <strong>never stored permanently</strong> on our servers.</li>
+                <li><strong>Authentication Tokens:</strong> To maintain an automated data synchronization schedule without requiring you to log in repeatedly, the Application stores an encrypted unique authentication token generated by Garmin. This token is securely kept in our private database (Google Firestore) and is never shared.</li>
+                <li><strong>Weight Metrics:</strong> The Application accesses body weight values and timestamps recorded on your Garmin profile to format and process the synchronization.</li>
+            </ul>
+
+            <h3>2. Data Security</h3>
+            <p>We prioritize the security of your data:</p>
+            <ul>
+                <li>All communications between the frontend interface, the backend synchronization server, and Garmin's API are fully encrypted using industry-standard Transport Layer Security (HTTPS/TLS).</li>
+                <li>Persistent storage of integration tokens utilizes Google Cloud's protected Firebase infrastructure.</li>
+            </ul>
+
+            <h3>3. Third-Party Sharing</h3>
+            <p>The Application does not sell, trade, rent, or distribute any user information, credentials, or synchronized physical metrics to third-party companies, advertisers, or outside entities. All data processing is strictly functional.</p>
+
+            <h3>4. User Rights and Data Deletion</h3>
+            <p>You retain absolute control over your integration:</p>
+            <ul>
+                <li>You can revoke the Application's access at any time by clearing your configurations or disconnecting the service.</li>
+                <li>If you wish to have your encrypted synchronization token manually purged from the database, you can request immediate removal by contacting the developer.</li>
+            </ul>
+
+            <h3>5. Contact Information</h3>
+            <p>For any questions regarding this privacy statement or to request data removal, please contact:</p>
+            <ul>
+                <li><strong>Developer Support:</strong> michaelmmrg.benes@seznam.cz</li>
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -180,6 +298,26 @@
     const codeDisplay = document.getElementById('codeDisplay');
     const paygateContainer = document.getElementById('paygateContainer');
     const stripeCheckoutBtn = document.getElementById('stripeCheckoutBtn');
+
+    // UI Tab Switch Function logic
+    function switchTab(targetView) {
+        const viewSetup = document.getElementById('viewSetup');
+        const viewPrivacy = document.getElementById('viewPrivacy');
+        const btnSetup = document.getElementById('btnSetup');
+        const btnPrivacy = document.getElementById('btnPrivacy');
+
+        if (targetView === 'setup') {
+            viewSetup.classList.remove('hidden');
+            viewPrivacy.classList.add('hidden');
+            btnSetup.classList.add('active');
+            btnPrivacy.classList.remove('active');
+        } else {
+            viewSetup.classList.add('hidden');
+            viewPrivacy.classList.remove('hidden');
+            btnSetup.classList.remove('active');
+            btnPrivacy.classList.add('active');
+        }
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
