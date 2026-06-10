@@ -319,11 +319,18 @@
         }
     }
     
-window.addEventListener('DOMContentLoaded', () => {
-    if (window.location.hash === '#privacy') {
-        switchTab('privacy');
+    // Dynamic URL Router Logic
+    function handleRouting() {
+        if (window.location.hash === '#privacy') {
+            switchTab('privacy');
+        } else {
+            switchTab('setup');
+        }
     }
-});
+
+    // Trigger router on initial load and whenever the hash parameters shift
+    window.addEventListener('DOMContentLoaded', handleRouting);
+    window.addEventListener('hashchange', handleRouting);
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -368,7 +375,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (result.is_free_promo) {
                     paygateContainer.classList.add('hidden');
                     
-                    // Seamlessly present the generated code directly on screen
                     codeDisplay.innerText = result.watch_code || "------";
                     codeContainer.classList.remove('hidden');
                     
