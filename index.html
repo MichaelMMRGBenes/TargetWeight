@@ -66,6 +66,30 @@
         .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
 
+        /* Instant Display Pairing Code Box */
+        .code-box {
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background-color: #f8fafc;
+            text-align: center;
+        }
+        .code-box h3 { margin: 0 0 4px 0; font-size: 16px; color: #0f172a; }
+        .code-box p { font-size: 13px; color: #475569; margin: 0; line-height: 1.4; }
+        .code-display {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #1e3a8a;
+            margin: 15px 0;
+            background: #edd89a;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px dashed #b45309;
+        }
+
         /* Stripe Checkout Container Styles */
         .paygate-box {
             margin-top: 25px;
@@ -79,7 +103,7 @@
         .paygate-box p { font-size: 13px; color: #64748b; margin-bottom: 15px; }
         .stripe-btn {
             display: inline-block;
-            background-color: #6772e5;
+            background-color: #2563eb;
             color: white;
             padding: 12px 20px;
             text-decoration: none;
@@ -90,14 +114,14 @@
             width: 100%;
             box-sizing: border-box;
         }
-        .stripe-btn:hover { background-color: #5561e2; }
+        .stripe-btn:hover { background-color: #1d4ed8; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Connect Garmin Connect</h2>
-    <p>Link your account securely. We will email you a unique setup code to enter on your Garmin device.</p>
+    <h2>Link Garmin Account</h2>
+    <p>Securely link your credentials. A unique integration code will be generated and delivered via email to finalize your configuration.</p>
 
     <form id="loginForm">
         <div class="form-group">
@@ -120,11 +144,18 @@
 
     <div id="statusMessage"></div>
 
+    <!-- Free Promo Code Box Component -->
+    <div id="codeContainer" class="code-box hidden">
+        <h3>Your Device Pairing Code</h3>
+        <div id="codeDisplay" class="code-display">------</div>
+        <p>Enter this 6-character code directly into the TargetWeight application on your Garmin device to complete synchronization.</p>
+    </div>
+
     <div id="paygateContainer" class="paygate-box hidden">
-        <h3>🔒 Premium Subscription Testing</h3>
-        <p>Your 30-day trial is ready! Want to verify the real-time Stripe payment webhook pipeline?</p>
+        <h3>Premium Subscription Plan</h3>
+        <p>To enable uninterrupted database syncing and activate full service features, please finalize your subscription preference below.</p>
         <a id="stripeCheckoutBtn" href="#" target="_blank" class="stripe-btn">
-            Simulate Upgrade via Stripe
+            Manage Subscription Plan
         </a>
     </div>
 </div>
@@ -139,6 +170,8 @@
     const mfaInput = document.getElementById('mfaCode');
     const submitBtn = document.getElementById('submitBtn');
     const statusMessage = document.getElementById('statusMessage');
+    const codeContainer = document.getElementById('codeContainer');
+    const codeDisplay = document.getElementById('codeDisplay');
     const paygateContainer = document.getElementById('paygateContainer');
     const stripeCheckoutBtn = document.getElementById('stripeCheckoutBtn');
 
@@ -146,6 +179,7 @@
         e.preventDefault();
         
         paygateContainer.classList.add('hidden');
+        codeContainer.classList.add('hidden');
         submitBtn.disabled = true;
         showStatus("Securely authenticating with Garmin... Please wait.", "info");
 
@@ -166,7 +200,6 @@
                 body: JSON.stringify(payload)
             });
 
-            // Safe parsing: Only attempt to read JSON if the response content type says so
             let result = {};
             const contentType = response.headers.get("content-type");
             if (contentType && contentType.includes("application/json")) {
@@ -177,17 +210,26 @@
             }
 
             if (response.ok && result.status === "success") {
-                showStatus(result.message, "success");
-                
-                const stripeBaseUrl = "https://buy.stripe.com/test_4gM3cn1Pw1Vk362aK12wU00";
-                stripeCheckoutBtn.href = `${stripeBaseUrl}?prefilled_email=${encodeURIComponent(targetEmail)}`;
-                
                 form.reset();
                 mfaGroup.classList.add('hidden');
-                paygateContainer.classList.remove('hidden');
-                
                 submitBtn.innerText = "Link & Generate Code";
                 submitBtn.disabled = false;
+
+                if (result.is_free_promo) {
+                    paygateContainer.classList.add('hidden');
+                    
+                    // Seamlessly present the generated code directly on screen
+                    codeDisplay.innerText = result.watch_code || "------";
+                    codeContainer.classList.remove('hidden');
+                    
+                    showStatus("Account verified successfully. Your device configuration layout is active.", "success");
+                } else {
+                    const stripeBaseUrl = "https://buy.stripe.com/test_4gM3cn1Pw1Vk362aK12wU00";
+                    stripeCheckoutBtn.href = `${stripeBaseUrl}?prefilled_email=${encodeURIComponent(targetEmail)}`;
+                    paygateContainer.classList.remove('hidden');
+                    showStatus(result.message, "success");
+                }
+                
             } else if (response.ok && result.status === "mfa_required") {
                 showStatus(result.message, "info");
                 mfaGroup.classList.remove('hidden');
@@ -196,7 +238,6 @@
                 submitBtn.innerText = "Verify MFA Code";
                 submitBtn.disabled = false;
             } else {
-                // Displays specific error messages (like your custom "Invalid Garmin email or password.")
                 showStatus(result.message || "Authentication failed. Please verify your credentials.", "error");
                 submitBtn.disabled = false;
             }
