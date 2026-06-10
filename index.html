@@ -318,6 +318,12 @@
             btnPrivacy.classList.add('active');
         }
     }
+    
+window.addEventListener('DOMContentLoaded', () => {
+    if (window.location.hash === '#privacy') {
+        switchTab('privacy');
+    }
+});
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
